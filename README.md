@@ -84,7 +84,7 @@ The app is mainly made of three components:
 Simple focused tests covering the essentials:
 
 ```bash
-python -m pytest tests/ -v
+python -m pytest tests/test_all.py -v
 ```
 
 (Just essential tests - no over-engineering ;))
