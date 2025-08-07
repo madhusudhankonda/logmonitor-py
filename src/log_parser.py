@@ -26,18 +26,14 @@ class LogEntry:
      It extracts structured log entries
 
     Expected CSV format: "HH:MM:SS,description,action,pid"
-"""
-    
+""" 
 class LogParser:
     
     def __init__(self):
         self.entries: List[LogEntry] = []
     
+    # Parse the log file and return a list of LogEntry objects
     def parse_file(self, file_path: str) -> List[LogEntry]:
-        """
-        Parse a CSV log file and return a list of LogEntry objects.
-
-        """
         entries = []
         
         try:
@@ -63,7 +59,6 @@ class LogParser:
     """
     Parse a single CSV row into a LogEntry object.
     """
-    
     def _parse_row(self, row: List[str], line_num: int) -> LogEntry:
  
         if len(row) != 4:
@@ -110,9 +105,7 @@ class LogParser:
         )
     
     def get_entries_by_pid(self, pid: str) -> List[LogEntry]:
-        """
-        Get all log entries for a specific PID.        """
-
+        
         return [entry for entry in self.entries if entry.pid == pid]
     
     def get_unique_pids(self) -> List[str]:

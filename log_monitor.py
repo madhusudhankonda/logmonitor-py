@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src")) # Add src directory to path for imports
 
 from src.log_parser import LogParser
-from src.job_tracker import JobTracker
+from src.job_tracker import track_jobs, get_statistics, get_alert_jobs
 from src.report_generator import ReportGenerator
 
 
@@ -54,28 +54,15 @@ def main():
         # for debugging, print the number of entries
         print(f"Number of entries parsed are:: {len(entries)}")
 
-        # Track job executions 
-        # Remember, the ask was to set 5min as warning and 10min as error)
-        
-        # LEt's  a new instance of the JobTracker class with these thresholds
-
-        tracker = JobTracker(
-            warning_threshold_minutes=5,
-            error_threshold_minutes=10
-        )
-
-        # Process the entries and track the job executions
-        tracker.process_entries(entries)
-        
-        # Get the completed jobs
-        
-        jobs = tracker.get_completed_jobs()
+        # Track job executions (5min warning, 10min error thresholds built-in)
+        jobs = track_jobs(entries)
 
         for job in jobs:
-            print(f"Job: {job.description} - Duration: {job.get_duration_minutes():.1f} minutes")
+            if job["complete"]:
+                print(f"Job: {job['description']} - Duration: {job['duration_minutes']:.1f} minutes")
 
-        # Now lets featch the statistics - (remember, this is a dictionary with the statistics?)
-        statistics = tracker.get_statistics()
+        # Get statistics
+        statistics = get_statistics(jobs)
         
         
         report_generator = ReportGenerator()

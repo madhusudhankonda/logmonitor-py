@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import List, TextIO
 import sys
 
-from .job_tracker import JobExecution, AlertLevel
+# Simple report generator - no complex imports needed
 
 """
     This clss generates formatted reports for job monitoring results.
@@ -31,12 +31,10 @@ class ReportGenerator:
         
         return f"{hours:02d}:{minutes:02d}:{secs:02d}" # double check this??
     
-    
-    """
-        Generate a complete report including all jobs and statistics.
-        Send most part of the reports to functions    
-    """
-    def generate_full_report(self, jobs: List[JobExecution], statistics: dict) -> None:
+
+    # Generate a complete report including all jobs and statistics.
+    # Send most part of the reports to functions    
+    def generate_full_report(self, jobs: List[dict], statistics: dict) -> None:
         
         self._write_header(" LOG MONITORING REPORT ")
         
@@ -89,7 +87,7 @@ class ReportGenerator:
             self._write_line(f" Duration (Minimum): {min_duration}")
             self._write_line(f" Duration (Maximum): {max_duration}")
     
-    def _write_jobs_section(self, jobs: List[JobExecution]) -> None:
+    def _write_jobs_section(self, jobs: List[dict]) -> None:
         
         if not jobs:
             return
@@ -98,19 +96,17 @@ class ReportGenerator:
         self._write_line()
         
         # Write table header
-        # TODO: Make this more readable - kinda ugly
         self._write_line(f"{'PID':<8} {'Description':<30} {'Duration':<12} {'Status':<10} {'Alert':<8}")
         self._write_line(f"{'-' * 8} {'-' * 30} {'-' * 12} {'-' * 10} {'-' * 8}")
         
         for job in jobs:
-            pid = job.pid[:7]  # Truncate long PIDs
-            description = job.description[:29]  # Truncate long descriptions
-            duration = self._format_duration(job.get_duration_minutes()) if job.is_complete() else "N/A"
-            status = "Complete" if job.is_complete() else "Incomplete"
-            alert = job.alert_level.value if job.alert_level != AlertLevel.INFO else "-"
+            pid = job["pid"][:7]  # Truncate long PIDs
+            description = job["description"][:29]  # Truncate long descriptions
+            duration = self._format_duration(job["duration_minutes"]) if job["complete"] else "N/A"
+            status = "Complete" if job["complete"] else "Incomplete"
+            alert = job["alert"] if job["alert"] != "OK" else "-"
             
             self._write_line(f"{pid:<8} {description:<30} {duration:<12} {status:<10} {alert:<8}")
-    
     
     def _format_duration(self, minutes: float) -> str:
         
