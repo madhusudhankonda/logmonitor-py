@@ -13,13 +13,21 @@ def track_jobs(entries: List[LogEntry]) -> List[Dict]:
     # Sort by timestamp to handle out-of-order entries
     sorted_entries = sorted(entries, key=lambda x: x.timestamp)
     
+    # First pass: process all START entries
     for entry in sorted_entries:
         if entry.action == "START":
             jobs[entry.pid] = entry
-            
-        elif entry.action == "END" and entry.pid in jobs:
+    
+    # Second pass: process all END entries
+    for entry in sorted_entries:
+        if entry.action == "END" and entry.pid in jobs:
             start_entry = jobs[entry.pid]
             duration_seconds = entry.timestamp - start_entry.timestamp
+            
+            # Handle day rollover: if end time is before start time, add 24 hours (86400 seconds)
+            if duration_seconds < 0:
+                duration_seconds += 86400  # 24 * 60 * 60 = 86400 seconds in a day
+            
             duration_minutes = duration_seconds / 60.0
             
             # Determine alert level

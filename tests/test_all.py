@@ -106,6 +106,59 @@ class TestJobTracker:
         job = jobs[0]
         assert job["complete"] == False
         assert job["duration_minutes"] == 0.0
+    
+    # Test day rollover: job starts late in day and ends early next day
+    def test_day_rollover_job(self):
+        
+        entries = [
+            LogEntry(86000, "Overnight job", "START", "12345", ""),  # 23:53:20 (86000 seconds)
+            LogEntry(1800, "Overnight job", "END", "12345", "")     # 00:30:00 next day (1800 seconds)
+        ]
+        
+        jobs = track_jobs(entries)
+        
+        assert len(jobs) == 1
+        job = jobs[0]
+        assert job["complete"] == True
+        # Duration should be 36 minutes and 40 seconds = 36.67 minutes
+        # (86400 - 86000 + 1800) / 60 = (400 + 1800) / 60 = 2200 / 60 = 36.67 minutes
+        expected_duration = (86400 - 86000 + 1800) / 60.0
+        assert abs(job["duration_minutes"] - expected_duration) < 0.01
+        assert job["alert"] == "ERROR"  # Should be > 10 minutes
+    
+    # Test edge case: job starts at 23:59:59 and ends at 00:00:01
+    def test_day_rollover_edge_case(self):
+        
+        entries = [
+            LogEntry(86399, "Edge case job", "START", "12345", ""),  # 23:59:59
+            LogEntry(1, "Edge case job", "END", "12345", "")         # 00:00:01 next day
+        ]
+        
+        jobs = track_jobs(entries)
+        
+        assert len(jobs) == 1
+        job = jobs[0]
+        assert job["complete"] == True
+        # Duration should be 2 seconds = 0.033 minutes
+        expected_duration = (86400 - 86399 + 1) / 60.0
+        assert abs(job["duration_minutes"] - expected_duration) < 0.001
+        assert job["alert"] == "OK"
+    
+    # Test normal same-day job still works correctly
+    def test_same_day_job_still_works(self):
+        
+        entries = [
+            LogEntry(36000, "Same day job", "START", "12345", ""),  # 10:00:00
+            LogEntry(36180, "Same day job", "END", "12345", "")     # 10:03:00
+        ]
+        
+        jobs = track_jobs(entries)
+        
+        assert len(jobs) == 1
+        job = jobs[0]
+        assert job["complete"] == True
+        assert job["duration_minutes"] == 3.0
+        assert job["alert"] == "OK"
 
 
 # Test statistics generation reports - we can add more tests here
