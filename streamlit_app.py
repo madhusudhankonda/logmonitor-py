@@ -2,8 +2,11 @@
 """
 Log Monitor Streamlit Dashboard
 
-A web-based dashboard for the log monitoring application that allows users
+This is a basic web-based dashboard using Streamlit.
+
+It is for the log monitoring application that allows users
 to upload log files and view job execution statistics in a user-friendly interface.
+
 """
 
 import streamlit as st
@@ -18,23 +21,22 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from src.log_parser import LogParser
 from src.job_tracker import track_jobs, get_statistics
-from src.report_generator import ReportGenerator
+
 
 
 def main():
     st.set_page_config(
-        page_title="Log Monitor Dashboard",
-        page_icon="📊",
+        page_title="Log Monitoring Dashboard",
         layout="wide"
     )
     
-    st.title("📊 Log Monitor Dashboard")
-    st.markdown("Upload your CSV log file to analyze job execution times and performance metrics.")
+    st.title("Log Monitor Dashboard")
+    st.markdown("Please upload your CSV log file to analyze job execution times and performance metrics.")
     
     # File upload section
     uploaded_file = st.file_uploader(
         "Choose a CSV log file",
-        type=['csv', 'log'],
+        type=['csv', 'log'], # make sure we set the correct file type of the uploaded file
         help="Upload a CSV file with format: HH:MM:SS,description,action,pid"
     )
     
@@ -42,7 +44,7 @@ def main():
         try:
             # Save uploaded file to temporary location
             with tempfile.NamedTemporaryFile(mode='w', suffix='.log', delete=False) as tmp_file:
-                # Read the uploaded file content
+                # Now, tead the uploaded file content
                 content = uploaded_file.read().decode('utf-8')
                 tmp_file.write(content)
                 tmp_path = tmp_file.name
@@ -62,14 +64,16 @@ def main():
             
         except (ValueError, FileNotFoundError, IOError) as e:
             st.error(f"Error processing file: {str(e)}")
-            st.info("Please ensure your file follows the correct CSV format: HH:MM:SS,description,action,pid")
+            st.info("Your CSV format seems to be incorrect. Please ensure your file follows the correct CSV format: HH:MM:SS,description,action,pid")
     else:
         # Show example format when no file is uploaded
-        st.info("👆 Please upload a log file to begin analysis")
+        st.info("Please upload a log file to begin analysis")
         
-        with st.expander("📝 Expected File Format"):
+        # let's show the expected file format when no file is uploaded 
+        # we use an expander to make it more readable
+        with st.expander("Expected File Format"):
             st.markdown("""
-            Your CSV log file should contain entries in this format:
+            Your CSV log file should contain entries in this format (else the application will not work):
             ```
             HH:MM:SS,description,action,pid
             ```
@@ -84,12 +88,14 @@ def main():
             """)
 
 
+# Display the main dashboard with statistics and job details.
 def display_dashboard(jobs, statistics, entries=None):
-    """Display the main dashboard with statistics and job details."""
+    
     
     # Summary statistics at the top
-    st.header("📈 Summary Statistics")
+    st.header("Summary Statistics of the Log File")
     
+    # let's use columns to display the statistics in a more readable way
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
@@ -108,9 +114,9 @@ def display_dashboard(jobs, statistics, entries=None):
         incomplete = statistics.get('incomplete_jobs', 0)
         st.metric("Incomplete", incomplete)
     
-    # Duration statistics (if available)
+    # Duration statistics - if available
     if statistics.get('avg_duration_minutes'):
-        st.header("⏱️ Duration Statistics")
+        st.header("Duration Statistics")
         dur_col1, dur_col2, dur_col3 = st.columns(3)
         
         with dur_col1:
@@ -131,7 +137,7 @@ def display_dashboard(jobs, statistics, entries=None):
     
     # Alert distribution
     if statistics['completed_jobs'] > 0:
-        st.header("🚨 Alert Distribution")
+        st.header("Alert Distribution")
         
         alert_data = {
             'Alert Level': ['OK', 'WARNING', 'ERROR'],
@@ -144,9 +150,11 @@ def display_dashboard(jobs, statistics, entries=None):
         
         alert_df = pd.DataFrame(alert_data)
         st.bar_chart(alert_df.set_index('Alert Level'))
+        st.write("Alert Distribution (As table):") #probably not needed
+        st.write(alert_df.set_index('Alert Level'))
     
     # Detailed job table
-    st.header("📋 Job Details")
+    st.header("Job Details")
     
     if jobs:
         # Convert jobs to DataFrame for better display
@@ -156,12 +164,14 @@ def display_dashboard(jobs, statistics, entries=None):
         col1, col2 = st.columns(2)
         
         with col1:
+            # we can add a dropdown to filter the jobs by status
             status_filter = st.selectbox(
                 "Filter by Status:",
                 ["All", "Complete", "Incomplete"]
             )
         
         with col2:
+            #similarly, filter by level
             alert_filter = st.selectbox(
                 "Filter by Alert Level:",
                 ["All", "OK", "WARNING", "ERROR"]
@@ -170,6 +180,7 @@ def display_dashboard(jobs, statistics, entries=None):
         # Apply filters
         filtered_df = job_df.copy()
         
+        # I may eeed to recheck this part again
         if status_filter != "All":
             if status_filter == "Complete":
                 filtered_df = filtered_df[filtered_df['Status'] == 'Complete']
@@ -186,15 +197,12 @@ def display_dashboard(jobs, statistics, entries=None):
             hide_index=True
         )
         
-        # Download option for detailed report
-        if st.button("📥 Generate Detailed Report"):
-            generate_detailed_report(jobs, statistics)
     else:
         st.warning("No jobs found in the log file.")
 
 
+# This function creates a pandas DataFrame from the jobs list for display
 def create_job_dataframe(jobs):
-    """Convert jobs list to a pandas DataFrame for display."""
     
     data = []
     for job in jobs:
@@ -216,38 +224,6 @@ def create_job_dataframe(jobs):
         })
     
     return pd.DataFrame(data)
-
-
-def generate_detailed_report(jobs, statistics):
-    """Generate and display a detailed text report."""
-    
-    report_generator = ReportGenerator()
-    
-    # Create a temporary file to capture the report output
-    with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as tmp_file:
-        # Redirect stdout to capture the report
-        original_stdout = sys.stdout
-        sys.stdout = tmp_file
-        
-        try:
-            report_generator.generate_full_report(jobs, statistics)
-        finally:
-            sys.stdout = original_stdout
-        
-        # Read the report content
-        tmp_file.seek(0)
-        report_content = tmp_file.read()
-    
-    # Clean up
-    os.unlink(tmp_file.name)
-    
-    # Display the report
-    st.text_area(
-        "Detailed Report:",
-        value=report_content,
-        height=400,
-        help="Copy this report content to save or share"
-    )
 
 
 if __name__ == "__main__":
