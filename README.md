@@ -12,7 +12,9 @@ The goal is to track the job execution times and generates a report.
 - Generates **errors** for jobs > 10 minutes
 - Shows detailed reports with statistics
 
-## Get Started 
+## Get Started (CMD LINE)
+
+(see the next section for Streamlit - UI based run)
 
 Run the dependencies:
 ```bash
@@ -113,4 +115,69 @@ logmonitor-py
 - **Focused** - Does one thing well
 - **Tested** - Core functionality verified
 
-Built with Python's KISS principle in mind :)
+
+# Log Monitor Streamlit Dashboard (a Simple Streamlit UI)
+
+A web-based dashboard for the log monitoring application. 
+
+The aim is to provides an intuitive interface for uploading and analysing log files.
+
+## Features
+
+-  **File Upload**: Drag and drop or browse to upload CSV log files (use the sample given)
+-  **Interactive Dashboard**: Visual representation of job statistics (high level stats)
+-  **Real-time Metrics**: Total jobs, completion rates, warnings, and errors
+-  **Duration Analytics**: Average, minimum, and maximum job durations
+-  **Alert Distribution**: Visual breakdown of job alerts (OK, WARNING, ERROR)
+-  **Filterable Job Table**: Filter jobs by status and alert level
+
+## pre-reqs
+
+Make sure you create a venv before you start.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activiate
+```
+
+(you can also use conda if you are familiar with it to creat ethe venv)
+
+## Installation
+
+1. Install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Run the Streamlit application:
+
+Kikc off the streamlit app - you should be able to upload your log file to show the log stats
+
+```bash
+streamlit run streamlit_app.py
+```
+
+3. Open your browser to the provided URL (typically http://localhost:8501)
+
+## Example Log File Format
+
+```csv
+10:30:15,scheduled task 001,START,12345
+10:33:20,scheduled task 001,END,12345
+11:15:00,background job 002,START,67890
+11:22:30,background job 002,END,67890
+23:58:00,overnight batch,START,99999
+00:05:00,overnight batch,END,99999
+```
+
+## Architecture
+
+Remember, the UI is a supplimentary component to the already existign log monitoring app.
+
+The Streamlit app integrates with the existing log monitoring components:
+- `LogParser`: Parses CSV log files into structured entries
+- `JobTracker`: Matches START/END entries and calculates durations
+- `ReportGenerator`: Creates detailed text reports
+
+
